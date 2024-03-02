@@ -1,22 +1,33 @@
 type recursivePromise = Promise<recursivePromise | null>;
 
-interface logger {
-    error: (...messages) => void;
-    warn: (...messages) => void;
-    log: (...messages) => void;
-    info: (...messages) => void;
-    debug: (...messages) => void;
+interface loggerInterface {
+    error: (...messages: any) => void;
+    warn: (...messages: any) => void;
+    log: (...messages: any) => void;
+    info: (...messages: any) => void;
+    debug: (...messages: any) => void;
+}
+const doNothing = (...messages: any) => {};
+class VoidLogger implements loggerInterface {
+    error = doNothing
+    warn = doNothing;
+    log = doNothing;
+    info = doNothing;
+    debug = doNothing;
 }
 
 class Repeater {
     action: () => Promise<any>;
-    logger: logger;
+    logger: loggerInterface;
 
     static sleep:(interval: number) => Promise<any>;
-    static defaultLogger: logger = console;
-    constructor(action: () => Promise<any>) {
+
+    static defaultLogger: loggerInterface = console;
+    static voidLogger: loggerInterface = new VoidLogger();
+
+    constructor(action: () => Promise<any>, options: {logger?:loggerInterface}={}) {
         this.action = action;
-        this.logger = Repeater.defaultLogger;
+        this.logger = options.logger ?? Repeater.defaultLogger;
     }
     async continuous(interval: number,limit: number | null, originalLimit: number | null = null): recursivePromise {
         originalLimit = originalLimit ?? limit;
