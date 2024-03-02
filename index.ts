@@ -21,17 +21,24 @@ enum StartMode {
     waitFirst = 'waitFirst'
 }
 
+enum IntervalMode {
+    fixed = 'fixed',
+    afterFinish = 'afterFinish'
+}
+
 class Repeater {
     action: () => Promise<any>;
     logger: loggerInterface;
     limit: number;
     runs: number;
+    intervalId: number;
 
     static sleep:(interval: number) => Promise<any>;
 
     static defaultLogger: loggerInterface = console;
     static voidLogger: loggerInterface = new VoidLogger();
     static startMode = StartMode;
+    static intervalMode = IntervalMode;
 
     constructor(action: () => Promise<any>, options: {logger?:loggerInterface}={}) {
         this.action = action;
@@ -41,7 +48,16 @@ class Repeater {
     _formatRepeatLimit(limit: number | null): string {
         return limit === null ? 'forever' : `${limit} times`;
     }
-    async continuous(interval: number,limit: number | null, options: {startMode: StartMode} = {}): recursivePromise {
+
+    _executeSleep(interval) {
+        this.logger.debug(`sleeping for ${interval} ms...`);
+        return Repeater.sleep(interval);
+    }
+
+    async continuous(interval: number,limit: number | null, options: {startMode: StartMode, intervalMode: IntervalMode} = {
+        startMode: StartMode.actionFirst,
+        intervalMode: IntervalMode.afterFinish
+    }): recursivePromise | Promise<void | null> {
         this.limit = this.limit ?? limit;
         const forever = limit===null;
         if (this.runs === 0) {
@@ -51,13 +67,10 @@ class Repeater {
         let initiator = () => Promise.resolve();
 
         if (options?.startMode === StartMode.waitFirst) {
-            initiator = () => {
-                this.logger.debug(`sleeping for ${interval} ms...`);
-                return Repeater.sleep(interval)
-            }
+            initiator = () => this._executeSleep(interval);
         }
-
-        return initiator().then(
+        
+        const chain = () => initiator().then(
                 () => this.action()
             )
             .then(
@@ -69,22 +82,40 @@ class Repeater {
                     }
                     return true;
                 }
-            )
-            .then((continueRunning) => {
-                if (!continueRunning) {
-                    return false;
-                }
-                this.logger.debug(`sleeping for ${interval} ms...`);
-                return Repeater.sleep(interval);
-            })
-            .then(
-                (continueRunning) => {
-                    if (continueRunning === false) {
-                        return null;
-                    }
-                    return this.continuous(interval,forever ? null : limit-this.runs);
-                }
             );
+        if (options.intervalMode === IntervalMode.fixed) {
+            return new Promise<void>((resolve, reject) => {
+                this.intervalId = setInterval(() => {
+                    chain().then((continueRunning) => {
+                        if (!continueRunning) {
+                            clearInterval(this.intervalId);
+                            resolve();
+                        }
+                    }).catch(error => {
+                        clearInterval(this.intervalId);
+                        reject(error);
+                    });
+                }, interval);
+            });
+        }
+        else {
+            return chain()           
+                .then((continueRunning) => {
+                    if (!continueRunning) {
+                        clearInterval(this.intervalId);
+                        return false;
+                    }                    
+                    return this._executeSleep(interval);
+                })
+                .then(
+                    (continueRunning: Boolean): recursivePromise | null => {
+                        if (continueRunning === false) {
+                            return null;
+                        }
+                        return this.continuous(interval,forever ? null : limit-this.runs);
+                    }
+                );
+        }
     }
 }
 
