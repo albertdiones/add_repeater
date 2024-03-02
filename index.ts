@@ -54,10 +54,12 @@ class Repeater {
         return Repeater.sleep(interval);
     }
 
-    async continuous(interval: number,limit: number | null, options: {startMode: StartMode, intervalMode: IntervalMode} = {
-        startMode: StartMode.actionFirst,
-        intervalMode: IntervalMode.afterFinish
-    }): recursivePromise | Promise<void | null> {
+    async continuous(interval: number,limit: number | null, 
+        options: {startMode?: StartMode, intervalMode?: IntervalMode} = {
+            startMode: StartMode.actionFirst,
+            intervalMode: IntervalMode.afterFinish
+        }
+    ): recursivePromise | Promise<void | null> {
         this.limit = this.limit ?? limit;
         const forever = limit===null;
         if (this.runs === 0) {
