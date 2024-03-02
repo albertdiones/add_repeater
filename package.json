@@ -1,6 +1,6 @@
 {
   "name": "add_repeater",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Asynchronous promise repeater",
   "main": "index.js",
   "scripts": {
