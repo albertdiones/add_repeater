@@ -3,10 +3,7 @@
   "version": "0.0.1",
   "description": "Asynchronous promise repeater",
   "main": "./dist/index.js",
-  "files": [
-    "./dist/index.js",
-    "./dist/index.d.ts"
-  ],
+  "files": ["./dist"],
   "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
