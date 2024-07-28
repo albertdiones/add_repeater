@@ -1,16 +1,14 @@
-// type RecursivePromise = Promise<RecursivePromise | null>;
+type recursivePromise = Promise<recursivePromise | null>;
 
-interface LoggerInterface {
-    error: (...messages: any[]) => void;
-    warn: (...messages: any[]) => void;
-    log: (...messages: any[]) => void;
-    info: (...messages: any[]) => void;
-    debug: (...messages: any[]) => void;
+interface loggerInterface {
+    error: (...messages: any) => void;
+    warn: (...messages: any) => void;
+    log: (...messages: any) => void;
+    info: (...messages: any) => void;
+    debug: (...messages: any) => void;
 }
-
-const doNothing = (..._messages: any) => {};
-
-class VoidLogger implements LoggerInterface {
+const doNothing = (...messages: any) => {};
+class VoidLogger implements loggerInterface {
     error = doNothing
     warn = doNothing;
     log = doNothing;
@@ -23,35 +21,47 @@ enum StartMode {
     waitFirst = 'waitFirst'
 }
 
+enum IntervalMode {
+    fixed = 'fixed',
+    afterFinish = 'afterFinish'
+}
+
 class Repeater {
     action: () => Promise<any>;
-    logger: LoggerInterface;
-    limit!: number;
+    logger: loggerInterface;
+    limit: number;
     runs: number;
+    intervalId: number;
 
-    static sleep: (interval: number) => Promise<any>;
+    static sleep:(interval: number) => Promise<any>;
 
-    static defaultLogger: LoggerInterface = console;
-    static voidLogger: LoggerInterface = new VoidLogger();
+    static defaultLogger: loggerInterface = console;
+    static voidLogger: loggerInterface = new VoidLogger();
     static startMode = StartMode;
+    static intervalMode = IntervalMode;
 
-    constructor(action: () => Promise<any>, options: { logger?: LoggerInterface } = {}) {
+    constructor(action: () => Promise<any>, options: {logger?:loggerInterface}={}) {
         this.action = action;
         this.logger = options.logger ?? Repeater.defaultLogger;
         this.runs = 0;
     }
-
     _formatRepeatLimit(limit: number | null): string {
         return limit === null ? 'forever' : `${limit} times`;
     }
-    
-    async continuous(
-        interval: number, 
-        limit: number | null, 
-        options: { startMode?: StartMode } = {}
-    ): Promise<any | null> {
+
+    _executeSleep(interval) {
+        this.logger.debug(`sleeping for ${interval} ms...`);
+        return Repeater.sleep(interval);
+    }
+
+    async continuous(interval: number,limit: number | null, 
+        options: {startMode?: StartMode, intervalMode?: IntervalMode} = {
+            startMode: StartMode.actionFirst,
+            intervalMode: IntervalMode.afterFinish
+        }
+    ): recursivePromise | Promise<void | null> {
         this.limit = this.limit ?? limit;
-        const forever = limit === null;
+        const forever = limit===null;
         if (this.runs === 0) {
             this.logger.debug(`Running for ${this._formatRepeatLimit(limit)} every ${interval/1000} seconds`);
         }
@@ -59,13 +69,10 @@ class Repeater {
         let initiator = () => Promise.resolve();
 
         if (options?.startMode === StartMode.waitFirst) {
-            initiator = () => {
-                this.logger.debug(`sleeping for ${interval} ms...`);
-                return Repeater.sleep(interval)
-            }
+            initiator = () => this._executeSleep(interval);
         }
-
-        return initiator().then(
+        
+        const chain = () => initiator().then(
                 () => this.action()
             )
             .then(
@@ -77,37 +84,45 @@ class Repeater {
                     }
                     return true;
                 }
-            )
-            .then((continueRunning) => {
-                if (!continueRunning) {
-                    return false;
-                }
-                this.logger.debug(`sleeping for ${interval} ms...`);
-                return Repeater.sleep(interval);
-            })
-            .then((continueRunning) => {
-                if (continueRunning === false) {
-                    return null;
-                }
-                return this.continuous(interval, forever ? null : limit);
+            );
+        if (options.intervalMode === IntervalMode.fixed) {
+            return new Promise<void>((resolve, reject) => {
+                this.intervalId = setInterval(() => {
+                    chain().then((continueRunning) => {
+                        if (!continueRunning) {
+                            clearInterval(this.intervalId);
+                            resolve();
+                        }
+                    }).catch(error => {
+                        clearInterval(this.intervalId);
+                        reject(error);
+                    });
+                }, interval);
             });
+        }
+        else {
+            return chain()           
+                .then((continueRunning) => {
+                    if (!continueRunning) {
+                        clearInterval(this.intervalId);
+                        return false;
+                    }                    
+                    return this._executeSleep(interval);
+                })
+                .then(
+                    (continueRunning: Boolean): recursivePromise | null => {
+                        if (continueRunning === false) {
+                            return null;
+                        }
+                        return this.continuous(interval,forever ? null : limit-this.runs);
+                    }
+                );
+        }
     }
 }
 
-const sleepFunc = (interval: number) => new Promise<void>(resolve => {
-    setTimeout(resolve, interval)
-})
-
-if (global.Bun) {
-    /* Use normal sleep func if bun version not more than or equal 1 */
-    if (Bun.semver.satisfies(Bun.version, "(x.y.z | x >= 1)")) {
-        Repeater.sleep = (interval: number) => Bun.sleep(interval);
-    } else {
-        Repeater.sleep = sleepFunc
-    }
-} else {
-    /* Node */
-    Repeater.sleep = sleepFunc
+if (Bun) {
+    Repeater.sleep = (interval: number) => Bun.sleep(interval);
 }
 
 export default Repeater;
