@@ -122,7 +122,7 @@ class Repeater {
     }
 }
 
-const sleepFunc = (interval: number) => new Promise<void>(resolve => {
+Repeater.sleep = (interval: number) => new Promise<void>(resolve => {
     setTimeout(resolve, interval)
 })
 
@@ -130,12 +130,7 @@ if (Bun) {
     /* Use normal sleep func if bun version not more than or equal 1 */
     if (Bun.semver.satisfies(Bun.version, "(x.y.z | x >= 1)")) {
         Repeater.sleep = (interval: number) => Bun.sleep(interval);
-    } else {
-        Repeater.sleep = sleepFunc
     }
-} else {
-    /* Node */
-    Repeater.sleep = sleepFunc
 }
 
 export default Repeater;
