@@ -1,14 +1,15 @@
 type recursivePromise = Promise<recursivePromise | null>;
 
-interface loggerInterface {
-    error: (...messages: any) => void;
-    warn: (...messages: any) => void;
-    log: (...messages: any) => void;
-    info: (...messages: any) => void;
-    debug: (...messages: any) => void;
+interface LoggerInterface {
+    error: (...messages: any[]) => void;
+    warn: (...messages: any[]) => void;
+    log: (...messages: any[]) => void;
+    info: (...messages: any[]) => void;
+    debug: (...messages: any[]) => void;
 }
+
 const doNothing = (...messages: any) => {};
-class VoidLogger implements loggerInterface {
+class VoidLogger implements LoggerInterface {
     error = doNothing
     warn = doNothing;
     log = doNothing;
@@ -28,19 +29,19 @@ enum IntervalMode {
 
 class Repeater {
     action: () => Promise<any>;
-    logger: loggerInterface;
+    logger: LoggerInterface;
     limit: number;
     runs: number;
     intervalId: number;
 
     static sleep:(interval: number) => Promise<any>;
 
-    static defaultLogger: loggerInterface = console;
-    static voidLogger: loggerInterface = new VoidLogger();
+    static defaultLogger: LoggerInterface = console;
+    static voidLogger: LoggerInterface = new VoidLogger();
     static startMode = StartMode;
     static intervalMode = IntervalMode;
 
-    constructor(action: () => Promise<any>, options: {logger?:loggerInterface}={}) {
+    constructor(action: () => Promise<any>, options: {logger?:LoggerInterface}={}) {
         this.action = action;
         this.logger = options.logger ?? Repeater.defaultLogger;
         this.runs = 0;
