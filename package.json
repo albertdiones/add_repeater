@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/albertdiones/add_repeater/issues"
   },
-  "homepage": "https://github.com/albertdiones/add_repeater#readme"
+  "homepage": "https://github.com/albertdiones/add_repeater#readme",
+  "devDependencies": {
+    "@types/bun": "^1.1.6"
+  }
 }
