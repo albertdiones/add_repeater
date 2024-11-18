@@ -34,6 +34,8 @@ class Repeater {
     runs: number;
     intervalId: number;
 
+    continue: boolean = true;
+
     static sleep:(interval: number) => Promise<any>;
 
     static defaultLogger: LoggerInterface = console;
@@ -55,12 +57,17 @@ class Repeater {
         return Repeater.sleep(interval);
     }
 
+    stop() {
+        this.continue = false;
+    }
+
     async continuous(interval: number,limit: number | null, 
         options: {startMode?: StartMode, intervalMode?: IntervalMode} = {
             startMode: StartMode.actionFirst,
             intervalMode: IntervalMode.afterFinish
         }
     ): recursivePromise | Promise<void | null> {
+        this.continue = true;
         this.limit = this.limit ?? limit;
         const forever = limit===null;
         if (this.runs === 0) {
@@ -112,7 +119,7 @@ class Repeater {
                 })
                 .then(
                     (continueRunning: Boolean): recursivePromise | null => {
-                        if (continueRunning === false) {
+                        if (continueRunning === false || this.continue === false) {
                             return null;
                         }
                         return this.continuous(interval,forever ? null : limit-this.runs);
