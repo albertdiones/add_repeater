@@ -1,5 +1,8 @@
 RepeaterJs
 
+Todos:
+ * Ability to stop repeating or stop the loop (like "break" on loop constructs)
+
 Repeat an action continuously for specified amount of times (or forever)
 
 ```
