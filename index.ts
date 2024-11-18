@@ -74,10 +74,6 @@ class Repeater {
             this.logger.debug(`Running for ${this._formatRepeatLimit(limit)} every ${interval/1000} seconds`);
         }
 
-        if (!limit || limit <= 0) {
-            return Promise.resolve();
-        }
-
         let initiator = () => Promise.resolve();
 
         if (options?.startMode === StartMode.waitFirst) {
@@ -91,10 +87,10 @@ class Repeater {
                 () => {
                     this.runs++;
                     this.logger.debug(`Run successful (${this.runs}${forever ? '' : '/'+ this.limit})`);
-                    if (!forever && limit <= 1) {
-                        return false; // do not continue repeating
+                    if (!forever && this.runs >= limit) {
+                        return false;
                     }
-                    return true; // continue repeating
+                    return true;
                 }
             );
         if (options.intervalMode === IntervalMode.fixed) {
@@ -123,19 +119,10 @@ class Repeater {
                 })
                 .then(
                     (continueRunning: Boolean): recursivePromise | null => {
-                        if (continueRunning === false) {
+                        if (continueRunning === false || this.continue === false) {
                             return null;
                         }
-                        if (this.continue === false) {
-                            return null;
-                        }
-                        const newLimit = forever ? null : limit-1;
-
-
-                        return this.continuous(
-                            interval,
-                            newLimit
-                        );
+                        return this.continuous(interval,forever ? null : limit-this.runs);
                     }
                 );
         }
