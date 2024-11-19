@@ -1,4 +1,4 @@
-type recursivePromise = Promise<recursivePromise | null>;
+type recursivePromise = Promise<recursivePromise | null | void>;
 
 interface LoggerInterface {
     error: (...messages: any[]) => void;
@@ -32,7 +32,7 @@ class Repeater {
     logger: LoggerInterface;
     limit: number;
     runs: number;
-    intervalId: number;
+    intervalId: Timer;
 
     continue: boolean = true;
 
@@ -61,12 +61,12 @@ class Repeater {
         this.continue = false;
     }
 
-    async continuous(interval: number,limit: number | null, 
+    continuous(interval: number,limit: number | null, 
         options: {startMode?: StartMode, intervalMode?: IntervalMode} = {
             startMode: StartMode.actionFirst,
             intervalMode: IntervalMode.afterFinish
         }
-    ): recursivePromise | Promise<void | null> {
+    ): recursivePromise {
         this.continue = true;
         this.limit = this.limit ?? limit;
         const forever = limit===null;
@@ -123,7 +123,7 @@ class Repeater {
                     return this._executeSleep(interval);
                 })
                 .then(
-                    (continueRunning: Boolean): recursivePromise | null => {
+                    (continueRunning: Boolean) => {
                         if (continueRunning === false) {
                             return null;
                         }
