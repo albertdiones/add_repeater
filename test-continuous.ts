@@ -6,4 +6,4 @@ const repeater = new Repeater(
         return Promise.resolve();
     }
 );
-repeater.continuous(1000,null);
+await repeater.continuous(1000,null);   
