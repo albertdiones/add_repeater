@@ -4,7 +4,7 @@
   "description": "Asynchronous promise repeater",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "loop-test": "while true; do bun test --timeout=20000; sleep 5; done",
     "validate-ts": "tsc --noEmit --pretty --skipLibCheck"
   },
   "repository": {
@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/albertdiones/add_repeater#readme",
   "devDependencies": {
-    "@types/bun": "^1.1.6"
+    "@types/bun": "latest",
+    "jest": "^29.7.0"
   }
 }
