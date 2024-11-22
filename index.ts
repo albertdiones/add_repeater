@@ -75,7 +75,7 @@ class Repeater {
         }
 
         // redundancy, shouldn't even happen
-        if (!limit || limit <= 0) {
+        if (limit !== null && limit <= 0) {
             return Promise.resolve();
         }
 
