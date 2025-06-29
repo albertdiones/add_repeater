@@ -31,6 +31,7 @@ class Repeater {
     static sleep:(interval: number) => Promise<any>;
 
     static defaultLogger: LoggerInterface = console;
+    static voidLogger: null = null;
     static startMode = StartMode;
     static intervalMode = IntervalMode;
 

@@ -80,3 +80,30 @@ test(
         Repeater.defaultLogger = console;
     }
 );
+
+
+test(
+    'void logger', // deprecated but just to be sure the 10 weekly downloader won't get their code broken...
+    async () => {
+        const logger = new mockLogger();
+        Repeater.defaultLogger = logger;
+        const timestamps: number[] = [];
+        const repeater = new Repeater(
+            () => {
+                const now = Date.now();
+                timestamps.push(now);
+                return Promise.resolve();
+            },
+            { logger: Repeater.voidLogger }
+        );
+        
+        expect(logger.logCount).toBe(0);
+        repeater.continuous(10,null);
+
+        await Bun.sleep(45);
+
+        
+        expect(logger.logCount).toBe(0);
+        Repeater.defaultLogger = console;
+    }
+);
