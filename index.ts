@@ -1,4 +1,4 @@
-type recursivePromise = Promise<recursivePromise | null | void>;
+type recursivePromise = Promise<any>;
 
 interface LoggerInterface {
     error: (...messages: any[]) => void;
