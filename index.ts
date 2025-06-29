@@ -8,14 +8,6 @@ interface LoggerInterface {
     debug: (...messages: any[]) => void;
 }
 
-const doNothing = (...messages: any) => {};
-class VoidLogger implements LoggerInterface {
-    error = doNothing
-    warn = doNothing;
-    log = doNothing;
-    info = doNothing;
-    debug = doNothing;
-}
 
 enum StartMode {
     actionFirst = 'actionFirst',
@@ -29,7 +21,7 @@ enum IntervalMode {
 
 class Repeater {
     action: () => Promise<any>;
-    logger: LoggerInterface;
+    logger: LoggerInterface | null;
     limit: number;
     runs: number;
     intervalId: Timer;
@@ -39,13 +31,12 @@ class Repeater {
     static sleep:(interval: number) => Promise<any>;
 
     static defaultLogger: LoggerInterface = console;
-    static voidLogger: LoggerInterface = new VoidLogger();
     static startMode = StartMode;
     static intervalMode = IntervalMode;
 
-    constructor(action: () => Promise<any>, options: {logger?:LoggerInterface}={}) {
+    constructor(action: () => Promise<any>, options: {logger?:LoggerInterface | null}) {
         this.action = action;
-        this.logger = options.logger ?? Repeater.defaultLogger;
+        this.logger = options?.logger === undefined ? Repeater.defaultLogger : options?.logger;
         this.runs = 0;
     }
     _formatRepeatLimit(limit: number | null): string {
@@ -53,7 +44,7 @@ class Repeater {
     }
 
     _executeSleep(interval) {
-        this.logger.debug(`sleeping for ${interval} ms...`);
+        this.logger?.debug(`sleeping for ${interval} ms...`);
         return Repeater.sleep(interval);
     }
 
@@ -71,7 +62,7 @@ class Repeater {
         this.limit = this.limit ?? limit;
         const forever = limit===null;
         if (this.runs === 0) {
-            this.logger.debug(`Running for ${this._formatRepeatLimit(limit)} every ${interval/1000} seconds`);
+            this.logger?.debug(`Running for ${this._formatRepeatLimit(limit)} every ${interval/1000} seconds`);
         }
 
         // redundancy, shouldn't even happen
@@ -91,7 +82,7 @@ class Repeater {
             .then(
                 () => {
                     this.runs++;
-                    this.logger.debug(`Run successful (${this.runs}${forever ? '' : '/'+ this.limit})`);
+                    this.logger?.debug(`Run successful (${this.runs}${forever ? '' : '/'+ this.limit})`);
                     if (!forever && limit <= 1) {
                         return false; // do not continue repeating
                     }
