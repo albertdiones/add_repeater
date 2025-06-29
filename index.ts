@@ -35,7 +35,7 @@ class Repeater {
     static startMode = StartMode;
     static intervalMode = IntervalMode;
 
-    constructor(action: () => Promise<any>, options: {logger?:LoggerInterface | null}) {
+    constructor(action: () => Promise<any>, options?: {logger?:LoggerInterface | null}) {
         this.action = action;
         this.logger = options?.logger === undefined ? Repeater.defaultLogger : options?.logger;
         this.runs = 0;
